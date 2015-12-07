@@ -1,7 +1,7 @@
 --[[
     GameInput - static class to handle user input.
 --]]
-local GameInput = class("GameInput")
+local GameInput = {}
 
 local _touch = nil
 local _visibleSize = nil

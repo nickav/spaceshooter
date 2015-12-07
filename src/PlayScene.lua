@@ -1,4 +1,5 @@
 local GameInput = require("GameInput")
+local Timer = require("Timer")
 
 local PlayScene = class("PlayScene", function()
     return cc.Scene:create()
@@ -25,16 +26,18 @@ function PlayScene:createLayer()
     
     -- create draw node
     local draw = cc.DrawNode:create()
-    local radius = 100
+    local radius = 127
     draw:drawSolidCircle(self.center, radius, 0, 20, 1, 1, cc.c4f(1.0,0,0,1.0))
     draw:drawSolidRect(cc.p(self.center.x-20,self.center.y - radius), cc.p(self.center.x+20,self.center.y + radius), cc.c4f(0,1.0,0,1))
     layer:addChild(draw)
     
+    -- create player
     local player = cc.Sprite:create("player.png")
     layer:addChild(player)
     player:setAnchorPoint(0.5, 0)
 
-    layer:setPosition(0, -self.center.y)
+    -- move camera
+    layer:setPosition(0, -self.center.y - radius/2)
     --layer:setScale(0.5)
     
     --[[
@@ -51,22 +54,22 @@ function PlayScene:createLayer()
 
     local rot = 0
     -- update every frame
-    -- {
+    do
         local time = 0
         local function update(dt)
             time = time + dt
             
             -- rotate the world
-            if (GameInput.pressingLeft()) then
+            if GameInput.pressingLeft() then
                 layer:setRotation(layer:getRotation() - 150*dt)
-            elseif (GameInput.pressingRight()) then
+            elseif GameInput.pressingRight() then
                 layer:setRotation(layer:getRotation() + 150*dt)
             end
             
             -- make player on top of the world
             local angle = math.rad(layer:getRotation() + 90)
-            local x = radius * math.cos(angle) + self.center.x
-            local y = radius * math.sin(angle) + self.center.y
+            local x = (radius - 1) * math.cos(angle) + self.center.x
+            local y = (radius - 1) * math.sin(angle) + self.center.y
             player:setPosition(x, y)
             player:setRotation(-layer:getRotation())
         end
@@ -78,7 +81,7 @@ function PlayScene:createLayer()
             end
         end
         layer:registerScriptHandler(onNodeEvent)
-    -- }
+    end
 
     return layer
 end

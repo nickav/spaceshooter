@@ -11,9 +11,9 @@ function PlayScene.create()
 end
 
 function PlayScene:ctor()
-    self.visibleSize = cc.Director:getInstance():getVisibleSize()
+    self.size = cc.Director:getInstance():getVisibleSize()
     self.origin = cc.Director:getInstance():getVisibleOrigin()
-    self.center = cc.p(self.visibleSize.width/2, -self.visibleSize.height/2)
+    self.center = cc.p(self.size.width/2, self.size.height/2)
     self.schedulerID = nil
 end
 
@@ -25,23 +25,50 @@ function PlayScene:createLayer()
     
     -- create draw node
     local draw = cc.DrawNode:create()
+    local radius = 100
+    draw:drawSolidCircle(self.center, radius, 0, 20, 1, 1, cc.c4f(1.0,0,0,1.0))
+    draw:drawSolidRect(cc.p(self.center.x-20,self.center.y - radius), cc.p(self.center.x+20,self.center.y + radius), cc.c4f(0,1.0,0,1))
     layer:addChild(draw)
-    --draw:drawSolidRect(cc.p(220,220),cc.p(100,100),cc.c4f(1.0,0,0,1.0))
-    draw:drawSolidCircle(self.center,self.visibleSize.width/2,0,100,1,1,cc.c4f(1.0,0,0,1.0))
-    draw:drawSolidRect(cc.p(self.visibleSize.width/2-50,100),cc.p(self.visibleSize.width/2+50,200),cc.c4f(0,1.0,0,1))
+    
+    local player = cc.Sprite:create("player.png")
+    layer:addChild(player)
+    player:setAnchorPoint(0.5, 0)
 
-    layer:setAnchorPoint(0.5, 0)
+    layer:setPosition(0, -self.center.y)
+    --layer:setScale(0.5)
+    
+    --[[
+    local moveCenter = cc.MoveTo:create(1, cc.p(0,0))
+    local zoomOut = cc.ScaleTo:create(0.5,0.5)
+    local moveCenterAndZoomOut = cc.Spawn:create(moveCenter, zoomOut)
+    layer:runAction(cc.EaseInOut:create(moveCenterAndZoomOut, 6))
+    local moveBottom = cc.MoveTo:create(1, cc.p(0,-self.size.height/2))
+    local zoomIn = cc.ScaleTo:create(1,1)
+    local moveBottomAndZoomIn = cc.Spawn:create(moveBottom, zoomIn)
+    layer:setScale(0.5)
+    layer:runAction(cc.EaseInOut:create(moveBottomAndZoomIn, 6))
+    --]]
+
     local rot = 0
     -- update every frame
     -- {
         local time = 0
         local function update(dt)
             time = time + dt
-            layer:setRotation(layer:getRotation() + 1)
             
+            -- rotate the world
             if (GameInput.pressingLeft()) then
-                --print "GO LEFT"
+                layer:setRotation(layer:getRotation() - 150*dt)
+            elseif (GameInput.pressingRight()) then
+                layer:setRotation(layer:getRotation() + 150*dt)
             end
+            
+            -- make player on top of the world
+            local angle = math.rad(layer:getRotation() + 90)
+            local x = radius * math.cos(angle) + self.center.x
+            local y = radius * math.sin(angle) + self.center.y
+            player:setPosition(x, y)
+            player:setRotation(-layer:getRotation())
         end
         self.schedulerID = cc.Director:getInstance():getScheduler():scheduleScriptFunc(update, 0, false)
     

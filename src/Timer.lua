@@ -1,52 +1,18 @@
 --[[
     A simple timer class.
-    Timer.updateAll(dt) must be called on each update step.
-    Timers can be used with callbacks or by polling the finished flag.
+    Timers can be used with callbacks or by polling the finished/tick flag.
 
     @author Nick Aversano
     @see https://github.com/HaxeFlixel/flixel/blob/master/flixel/util/FlxTimer.hx
 --]]
-require "helpers"
+
 
 local Timer = class("Timer")
-local timers = {}
+local TimeManager = require("TimeManager")
 
-local function _addTimer(self)
-    if (not self._inManager) then
-        table.insert(timers, self)
-        self._inManager = true
-    end
-end
-
-local function _removeTimer(self)
-    if (self._inManager) then
-        table.remove(timers, table.find(self))
-        self._inManager = false
-    end
-end
-
--- Updates all timers. Must be called on every game update.
-function Timer.updateAll(dt)
-    -- iterate from back to front to allow items to be removed
-    for i=#timers,1,-1 do
-        if timers[i].finished and timers[i]._inManager then
-            _removeTimer(timers[i])
-        else
-            timers[i]:update(dt)
-        end
-    end
-end
-
--- Forces all timers to clear. Useful because live code pushing will add
--- multiple timers for the same instance if the timer hasn't finished.
--- Use this at the start of your code for consistency with live-reloading.
-function Timer.clearAll()
-    timers = {}
-end
-
--- Instanctiates and starts the timer if time is set.
+-- Instanctiates but does not start it.
 -- @see Timer:start()
-function Timer:ctor(time, loops, callback)
+function Timer:ctor()
     -- how much time the timer was set for
     self.time = 0
     -- how many loops the timer was set for
@@ -55,14 +21,14 @@ function Timer:ctor(time, loops, callback)
     self.paused = false
     -- check to see if the timer is finished
     self.finished = false
+    -- check to see if a loop has just passed (true when callback is called)
+    self.tick = false
     
     -- private instance fields:
     self._callback = nil
     self._timeCounter = 0
     self._loopsCounter = 0
     self._inManager = false
-    
-    if time then self:start(time, loops, callback) end
 end
 
 -- Starts or resumes the timer. If the timer was paused,
@@ -85,19 +51,26 @@ function Timer:start(time, callback, loops)
     self.paused = false
     self._timeCounter = 0
     
-    _addTimer(self)
+    TimeManager.addTimer(self)
     
     return self
 end
 
--- Called by Timer.updateAll to update the timer. Don't call this manually.
+-- Makes the timer loop forever.
+function Timer:loopForever()
+    self.loops = 0
+    return self
+end
+
+-- Called by TimeManager.update to update the timer. Don't call this manually.
 function Timer:update(dt)
     self._timeCounter = self._timeCounter + dt
 
     while ((self._timeCounter >= self.time) and not self.paused and not self.finished) do
-    
+
         self._timeCounter = self._timeCounter - self.time
         self._loopsCounter = self._loopsCounter + 1
+        self.tick = true
 
         if (self._callback) then self._callback(self) end
 
@@ -107,16 +80,10 @@ function Timer:update(dt)
     end
 end
 
--- Makes the timer loop forever.
-function Timer:loopForever()
-    self.loops = 0
-    return self
-end
-
 -- Stops the timer.
 function Timer:cancel()
     self.finished = true
-    _removeTimer(self)
+    TimeManager.removeTimer(self)
 end
 
 -- Resets the timer for its original time or the new time specified.

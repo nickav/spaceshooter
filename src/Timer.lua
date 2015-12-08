@@ -10,6 +10,17 @@
 local Timer = class("Timer")
 local TimeManager = require("TimeManager")
 
+-- Creates a new Timer and starts it if time is not empty (nil)
+--
+-- @param   time      Seconds it takes for the timer to go off
+-- @param   loops     How many times should the timer go off. Default is 1. 0 means "Loop forever".
+-- @param   callback  Optional, triggered when the timer runs out, once for each loop.
+function Timer.create(time, callback, loops)
+    local timer = Timer.new()
+    if time then timer:start(time, callback, loops) end
+    return timer
+end
+
 -- Instanctiates but does not start it.
 -- @see Timer:start()
 function Timer:ctor()

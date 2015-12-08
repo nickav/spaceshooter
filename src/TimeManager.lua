@@ -2,8 +2,6 @@
     Updates all Timer instances.
 --]]
 
-require "helpers"
-
 local TimeManager = {}
 
 local timers = {}
@@ -33,7 +31,8 @@ function TimeManager.update(dt)
         cc.Director:getInstance():getRunningScene():registerScriptHandler(onNodeEvent)
         tag = cc.Director:getInstance():getRunningScene():getTag()
     end
-    -- iterate from back to front to allow items to be removed
+
+    -- iterate from back to front to allow items to be removed during the loop
     for i=#timers,1,-1 do
         timers[i].tick = false
         if timers[i].finished and timers[i]._inManager then
@@ -54,14 +53,20 @@ end
 
 function TimeManager.addTimer(self)
     if (not self._inManager) then
-        table.insert(timers, self)
+        timers[#timers+1] = self
         self._inManager = true
     end
 end
 
 function TimeManager.removeTimer(self)
     if (self._inManager) then
-        table.remove(timers, table.find(self))
+        -- find self in timers
+        local index = -1
+        for i=1, #timers do
+            if timers[i] == self then index = i break end
+        end
+        -- remove timer if it exists
+        if index >= 0 then table.remove(timers, index) end
         self._inManager = false
     end
 end

@@ -1,6 +1,7 @@
 local GameInput = require("GameInput")
 local Timer = require("Timer")
 local Player = require("Player")
+local Enemy = require("Enemy")
 
 local PlayScene = class("PlayScene", function()
     return cc.Scene:create()
@@ -28,13 +29,8 @@ function PlayScene:createLayer()
     -- create draw node
     local draw = cc.DrawNode:create()
     local radius = 127
-    draw:drawSolidCircle(self.center, radius, 0, 20, 1, 1, cc.c4f(1.0,0,0,1.0))
-    draw:drawSolidRect(cc.p(self.center.x-20,self.center.y - radius), cc.p(self.center.x+20,self.center.y + radius), cc.c4f(0,1.0,0,1))
+    draw:drawSolidCircle(self.center, radius, 0, 18, 1, 1, cc.c4f(1.0,0,0,1.0))
     layer:addChild(draw)
-    
-    -- create player
-    local player = Player.new(layer, self.center, radius)
-    layer:addChild(player)
 
     -- move camera
     layer:setPosition(0, -self.center.y - radius/2)
@@ -54,26 +50,36 @@ function PlayScene:createLayer()
 
     -- update every frame
     do
-        local godSpeed = 150
+        -- create player
+        local player = Player.new(layer, self.center, radius)
+        layer:addChild(player)
         
+        local enemy = Enemy.new(cc.p(0,self.size.height), self.center, radius)
+        layer:addChild(enemy)
+    
+        local godSpeed = 150
+        local shootCooldown = Timer.create(0.5)
+
         local time = 0
         local function update(dt)
             time = time + dt
             
             -- rotate the world
-            if GameInput.pressingLeft() then
-                layer:setRotation(layer:getRotation() - godSpeed*dt)
-                if layer:getRotation() < 0 then
-                    layer:setRotation(layer:getRotation() + 360)
-                end
-            elseif GameInput.pressingRight() then
-                layer:setRotation(layer:getRotation() + godSpeed*dt)
-                if layer:getRotation() >= 360 then
-                    layer:setRotation(layer:getRotation() - 360)
-                end
+            if GameInput.pressingRight() then
+                local rot = layer:getRotation() + godSpeed*dt
+                if rot >= 360 then rot = rot - 360 end
+                layer:setRotation(rot)
+            elseif GameInput.pressingLeft() then
+                local rot = layer:getRotation() - godSpeed*dt
+                if rot < 0 then rot = rot + 360 end
+                layer:setRotation(rot)
+            elseif shootCooldown.finished then
+                -- shoot bullets
+                shootCooldown:reset()
             end
             
             player:update(dt)
+            enemy:update(dt)
         end
         self.schedulerID = cc.Director:getInstance():getScheduler():scheduleScriptFunc(update, 0, false)
     

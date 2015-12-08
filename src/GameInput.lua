@@ -3,6 +3,7 @@
 --]]
 local GameInput = {}
 
+local target = cc.Application:getInstance():getTargetPlatform()
 local _touch = nil
 local _visibleSize = nil
 local _key_right = false
@@ -42,33 +43,55 @@ function GameInput.create(layer)
 
     -- keyboard handlers
     -- {
-    -- TODO: figure out Mac keyboard code differences
         local function onKeyPressed(keyCode, event)
-            --print("pressing " .. keyCode)
-            --if (keyCode == cc.KeyCode.KEY_D or keyCode == cc.KeyCode.KEY_RIGHT_ARROW) then
-            -- D or right arrow
-            if (keyCode == 127 or keyCode == 27) then
-                _key_right = true
-            end
-            -- A or left arrow
-            if (keyCode == 124 or keyCode == 26) then
-                _key_left = true
-            end
-            -- W or up arrow
-            if (keyCode == 146 or keyCode == 28) then
-            end
-            -- S or down arrow
-            if (keyCode == 142 or keyCode == 29) then
+            -- for some reason Mac keyboard codes are different
+            if (target == cc.PLATFORM_OS_MAC) then
+                if (keyCode == 127 or keyCode == 27) then
+                    _key_right = true
+                end
+                if (keyCode == 124 or keyCode == 26) then
+                    _key_left = true
+                end
+                if (keyCode == 146 or keyCode == 28) then
+                end
+                if (keyCode == 142 or keyCode == 29) then
+                end
+            else
+                if (keyCode == cc.KeyCode.KEY_D or keyCode == cc.KeyCode.KEY_RIGHT_ARROW) then
+                    _key_right = true
+                end
+                if (keyCode == cc.KeyCode.KEY_A or keyCode == cc.KeyCode.KEY_LEFT_ARROW) then
+                    _key_left = true
+                end
+                if (keyCode == cc.KeyCode.KEY_W or keyCode == cc.KeyCode.KEY_UP_ARROW) then
+                end
+                if (keyCode == cc.KeyCode.KEY_S or keyCode == cc.KeyCode.KEY_DOWN_ARROW) then
+                end
             end
         end
         local function onKeyReleased(keyCode, event)
-            -- D or right arrow
-            if (keyCode == 127 or keyCode == 27) then
-                _key_right = false
-            end
-            -- A or left arrow
-            if (keyCode == 124 or keyCode == 26) then
-                _key_left = false
+            if (target == cc.PLATFORM_OS_MAC) then
+                if (keyCode == 127 or keyCode == 27) then
+                    _key_right = false
+                end
+                if (keyCode == 124 or keyCode == 26) then
+                    _key_left = false
+                end
+                if (keyCode == 146 or keyCode == 28) then
+                end
+                if (keyCode == 142 or keyCode == 29) then
+                end
+            else
+                if (keyCode == cc.KeyCode.KEY_D or keyCode == cc.KeyCode.KEY_RIGHT_ARROW) then
+                    _key_right = false
+                end
+                if (keyCode == cc.KeyCode.KEY_A or keyCode == cc.KeyCode.KEY_LEFT_ARROW) then
+                    _key_left = false
+                end
+                if (keyCode == cc.KeyCode.KEY_W or keyCode == cc.KeyCode.KEY_UP_ARROW) then
+                end
+                if (keyCode == cc.KeyCode.KEY_S or keyCode == cc.KeyCode.KEY_DOWN_ARROW) then
+                end
             end
         end
         local keyListener = cc.EventListenerKeyboard:create()

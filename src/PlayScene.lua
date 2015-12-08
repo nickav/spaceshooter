@@ -1,5 +1,6 @@
 local GameInput = require("GameInput")
 local Timer = require("Timer")
+local Player = require("Player")
 
 local PlayScene = class("PlayScene", function()
     return cc.Scene:create()
@@ -32,9 +33,8 @@ function PlayScene:createLayer()
     layer:addChild(draw)
     
     -- create player
-    local player = cc.Sprite:create("player.png")
+    local player = Player.new(layer, self.center, radius)
     layer:addChild(player)
-    player:setAnchorPoint(0.5, 0)
 
     -- move camera
     layer:setPosition(0, -self.center.y - radius/2)
@@ -52,26 +52,28 @@ function PlayScene:createLayer()
     layer:runAction(cc.EaseInOut:create(moveBottomAndZoomIn, 6))
     --]]
 
-    local rot = 0
     -- update every frame
     do
+        local godSpeed = 150
+        
         local time = 0
         local function update(dt)
             time = time + dt
             
             -- rotate the world
             if GameInput.pressingLeft() then
-                layer:setRotation(layer:getRotation() - 150*dt)
+                layer:setRotation(layer:getRotation() - godSpeed*dt)
+                if layer:getRotation() < 0 then
+                    layer:setRotation(layer:getRotation() + 360)
+                end
             elseif GameInput.pressingRight() then
-                layer:setRotation(layer:getRotation() + 150*dt)
+                layer:setRotation(layer:getRotation() + godSpeed*dt)
+                if layer:getRotation() >= 360 then
+                    layer:setRotation(layer:getRotation() - 360)
+                end
             end
             
-            -- make player on top of the world
-            local angle = math.rad(layer:getRotation() + 90)
-            local x = (radius - 1) * math.cos(angle) + self.center.x
-            local y = (radius - 1) * math.sin(angle) + self.center.y
-            player:setPosition(x, y)
-            player:setRotation(-layer:getRotation())
+            player:update(dt)
         end
         self.schedulerID = cc.Director:getInstance():getScheduler():scheduleScriptFunc(update, 0, false)
     

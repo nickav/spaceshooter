@@ -3,12 +3,10 @@ local Enemy = class("Enemy", function()
     return Entity.extend(cc.Sprite:create("player.png"))
 end)
 
-function Enemy:ctor(position, center, radius)
+function Enemy:ctor(center, radius)
     radius = radius + 0.5 * self:getTextureRect().height
     self.radiusSquared = radius * radius
     self.center = center
-    self:setPosition(position)
-    self:moveTo(center, 50)
 end
 
 function Enemy:update(dt)

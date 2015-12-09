@@ -13,6 +13,11 @@ end
 -- psuedo-multiple inheritence thing
 -- pretty much just did this so auto completions for cc.Sprite still works
 local Entity = {}
+
+Entity.default = "0"
+Entity.dead = "1"
+
+-- Precondition: cls extends cc.Sprite
 function Entity.extend(cls)
     cls.speed = cc.p(0,0)
     cls.alive = true
@@ -30,19 +35,29 @@ function Entity:update(dt)
     self:setPosition(x, y)
 end
 
+function Entity:live()
+    self.alive = true
+    self:setVisible(true)
+    self:setName(Entity.default)
+end
+
 function Entity:kill()
     self.alive = false
     self:setVisible(false)
+    self:setName(Entity.dead)
 end
 
--- math.sqrt and math.atan2 are somewhat expensive functions
+-- parent must extend Node
+function Entity.getFirstAvailable(parent)
+    return parent:getChildByName(Entity.dead)
+end
+
 function Entity:moveTo(position, speed)
     local dx = position.x - self:getPositionX()
     local dy = position.y - self:getPositionY()
     local distance = math.sqrt(dx*dx + dy*dy)
     self.speed.x = speed * dx / distance
     self.speed.y = speed * dy / distance
-    self:setRotation(math.deg(math.atan2(-dy, dx)))
 end
 
 return Entity

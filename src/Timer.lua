@@ -5,7 +5,7 @@
     @author Nick Aversano
     @see https://github.com/HaxeFlixel/flixel/blob/master/flixel/util/FlxTimer.hx
 --]]
-
+-- TODO: see why callback function referenced Timer can't call reset()
 
 local Timer = class("Timer")
 local TimeManager = require("TimeManager")

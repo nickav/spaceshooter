@@ -7,7 +7,7 @@ end)
 Enemy.tag = "2"
 
 function Enemy:ctor(center, radius)
-    radius = radius + 0.5 * self:getTextureRect().height
+    radius = radius + 0.5 * self.size.height
     self.radiusSquared = radius * radius
     self.center = center
 end

@@ -20,6 +20,7 @@ function PlayScene:ctor()
     self.center = cc.p(self.size.width/2, self.size.height/2)
     self.schedulerID = nil
     self.enemySpawnDist = math.sqrt(self.size.width * self.size.width / 2 + self.size.height * self.size.height)
+    self.bullets = {}
 end
 
 function PlayScene:createLayer()
@@ -38,7 +39,6 @@ function PlayScene:createLayer()
 
     -- move camera
     layer:setPosition(0, -self.center.y - radius/2)
-    --layer:setScale(0.5)
     
     --[[
     local moveCenter = cc.MoveTo:create(1, cc.p(0,0))
@@ -66,9 +66,11 @@ function PlayScene:createLayer()
         local shootCooldown = Timer.create(0.3)
         
         local enemyTimer = Timer.create(2)
+        self:createEnemy()
 
         local time = 0
         local function update(dt)
+            draw:clear()
             time = time + dt
             
             -- rotate the world
@@ -99,16 +101,40 @@ function PlayScene:createLayer()
                 leftSpeed = minSpeed
             end
             
+            -- shoot bulletsq
             if shootCooldown.finished then
-                -- shoot bullets
                 self:shoot(player)
                 shootCooldown:reset()
             end
 
+
             -- update all children
             local children = layer:getChildren()
             for i=1, #children do
-                children[i]:update(dt)
+                if children[i].alive then
+                    children[i]:update(dt)
+                
+                    -- check if an enemy collides with a bullet
+                    if children[i].__cname == "Enemy" then
+                        local enemy = children[i]
+                        local rect = enemy:getBoundingBox()
+                        draw:drawRect(cc.p(rect.x, rect.y), cc.p(rect.x + rect.width, rect.y + rect.height), cc.c4f(1,1,0,1))
+                        for i=1,#self.bullets do
+                            local bullet = self.bullets[i]
+                            if bullet.alive and cc.rectIntersectsRect(bullet:getBoundingBox(), rect) then
+                                bullet:kill()
+                                enemy:kill()
+                                break
+                            end
+                        end
+                    end
+                end
+            end
+            
+            -- debug draw
+            for i=1, #self.bullets do
+                local rect = self.bullets[i]:getBoundingBox()
+                draw:drawRect(cc.p(rect.x, rect.y), cc.p(rect.x + rect.width, rect.y + rect.height), cc.c4f(0,1,1,1))
             end
             
             -- create enemies
@@ -150,39 +176,40 @@ function PlayScene:createEnemy()
     enemy:moveTo(self.center, 50)
 end
 
-function PlayScene:shoot(player)
-    local x = player:getPositionX()
-    local y = player:getPositionY()
-
+function PlayScene:createBullet()
     -- try to find an unused bullet, or create a new one if none exists
     local bullet = self.layer:getChildByName(Bullet.tag)
     if bullet == nil then
         bullet = Bullet.new(self.center, self.size.width)
         self.layer:addChild(bullet)
+        table.insert(self.bullets, bullet)
     else
         bullet:live()
     end
+    
+    return bullet
+end
+
+function PlayScene:shoot(player)
+    local x = player:getPositionX()
+    local y = player:getPositionY()
+
+    local bullet = self:createBullet()
     bullet:setPosition(x, y)
     bullet:moveTo(self.center, -1000)
     bullet:setRotation(player:getRotation())
-
-    local bullet2 = self.layer:getChildByName(Bullet.tag)
-    if bullet2 == nil then
-        bullet2 = Bullet.new(self.center, self.size.width)
-        self.layer:addChild(bullet2)
-    else
-        bullet2:live()
-    end
-    bullet2:setPosition(x, y)
-    bullet2:moveTo(self.center, -1000)
-    bullet2:setRotation(player:getRotation())
 
     -- move bullets to turrent positions
     local angle = math.rad(self.layer:getRotation())
     local cos = math.cos(angle)
     local sin = math.sin(angle)
-    bullet2:setPosition(x - 20*cos, y - 20*sin)
     bullet:setPosition(x + 20*cos, y + 20*sin)
+
+    local bullet2 = self:createBullet()
+    bullet2:setPosition(x, y)
+    bullet2:moveTo(self.center, -1000)
+    bullet2:setRotation(player:getRotation())
+    bullet2:setPosition(x - 20*cos, y - 20*sin)
 end
 
 return PlayScene

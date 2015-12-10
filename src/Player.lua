@@ -7,6 +7,7 @@ function Player:ctor(layer, center, radius)
     self.radius = radius
     self.center = center
     self.rotation = nil
+    self.alive = true
     
     self:setAnchorPoint(0.5, 0.05)
     self:setLocalZOrder(1)

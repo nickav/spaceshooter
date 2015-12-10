@@ -21,6 +21,7 @@ Entity.tag = "1"
 function Entity.extend(cls)
     cls.speed = cc.p(0,0)
     cls.alive = true
+    cls.size = cls:getTextureRect()
     -- copy methods to class
     for k,v in pairs(Entity) do cls[k] = v end
     return cls
@@ -45,6 +46,11 @@ function Entity:kill()
     self.alive = false
     self:setVisible(false)
     self:setName(Entity.tag)
+end
+
+-- TODO: prevent object tunneling, use a rectangle between the past and current positions
+function Entity:collidesWith(other)
+    return cc.rectIntersectsRect(self:getBoundingBox(), other:getBoundingBox())
 end
 
 -- parent must extend Node

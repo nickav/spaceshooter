@@ -15,7 +15,7 @@ end
 local Entity = {}
 
 Entity.default = "0"
-Entity.dead = "1"
+Entity.tag = "1"
 
 -- Precondition: cls extends cc.Sprite
 function Entity.extend(cls)
@@ -44,13 +44,15 @@ end
 function Entity:kill()
     self.alive = false
     self:setVisible(false)
-    self:setName(Entity.dead)
+    self:setName(Entity.tag)
 end
 
 -- parent must extend Node
+--[[
 function Entity.getFirstAvailable(parent)
     return parent:getChildByName(Entity.dead)
 end
+--]]
 
 function Entity:moveTo(position, speed)
     local dx = position.x - self:getPositionX()

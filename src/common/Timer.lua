@@ -8,7 +8,10 @@
 -- TODO: see why callback function referenced Timer can't call reset()
 
 local Timer = class("Timer")
-local TimeManager = require("TimeManager")
+local TimeManager = require("common/TimeManager")
+
+-- adjust this for slow/fast motion where 1 game second does not equal 1 second
+Timer.speed = 1
 
 -- Creates a new Timer and starts it if time is not empty (nil)
 --
@@ -75,7 +78,7 @@ end
 
 -- Called by TimeManager.update to update the timer. Don't call this manually.
 function Timer:update(dt)
-    self._timeCounter = self._timeCounter + dt
+    self._timeCounter = self._timeCounter + dt*Timer.speed
 
     while ((self._timeCounter >= self.time) and not self.paused and not self.finished) do
 

@@ -3,11 +3,13 @@ local Player = class("Player", function()
 end)
 
 function Player:ctor(layer, center, radius)
-    self:setAnchorPoint(0.5, 0.05)
     self.layer = layer
     self.radius = radius
     self.center = center
     self.rotation = nil
+    
+    self:setAnchorPoint(0.5, 0.05)
+    self:setLocalZOrder(1)
 end
 
 function Player:update(dt)

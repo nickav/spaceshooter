@@ -1,5 +1,5 @@
 local GameInput = require("GameInput")
-local Timer = require("Timer")
+local Timer = require("common/Timer")
 local Player = require("Player")
 local Enemy = require("Enemy")
 local Bullet = require("Bullet")
@@ -19,6 +19,7 @@ function PlayScene:ctor()
     self.origin = cc.Director:getInstance():getVisibleOrigin()
     self.center = cc.p(self.size.width/2, self.size.height/2)
     self.schedulerID = nil
+    self.enemySpawnDist = math.sqrt(self.size.width * self.size.width / 2 + self.size.height * self.size.height)
 end
 
 function PlayScene:createLayer()
@@ -55,7 +56,6 @@ function PlayScene:createLayer()
     do
         -- create player
         local player = Player.new(layer, self.center, radius)
-        player:setLocalZOrder(1)
         layer:addChild(player)
     
         local rightSpeed = 0
@@ -63,7 +63,7 @@ function PlayScene:createLayer()
         local accel = 4
         local minSpeed = 5
         local maxSpeed = 150
-        local shootCooldown = Timer.create(0.2)
+        local shootCooldown = Timer.create(0.3)
         
         local enemyTimer = Timer.create(2)
 
@@ -132,36 +132,57 @@ end
 
 function PlayScene:createEnemy()
     local angle = math.random()*2*math.pi
-    local distance = self.size.height
+    local distance = self.enemySpawnDist
+    
     local x = math.cos(angle) * distance + self.center.x
     local y = math.sin(angle) * distance + self.center.y
-    local enemy = Enemy.new(self.center, self.radius)
+    
+    -- try to reuse an old enemy or create one if none exists
+    local enemy = self.layer:getChildByName(Enemy.tag)
+    if enemy == nil then
+        enemy = Enemy.new(self.center, self.radius)
+        self.layer:addChild(enemy)
+    else
+        enemy:live()
+    end
     enemy:setPosition(x, y)
     enemy:setRotation(math.deg(-angle))
     enemy:moveTo(self.center, 50)
-    self.layer:addChild(enemy)
 end
 
 function PlayScene:shoot(player)
     local x = player:getPositionX()
     local y = player:getPositionY()
 
-    local bullet = Bullet.new(self.center, self.size.width)
+    -- try to find an unused bullet, or create a new one if none exists
+    local bullet = self.layer:getChildByName(Bullet.tag)
+    if bullet == nil then
+        bullet = Bullet.new(self.center, self.size.width)
+        self.layer:addChild(bullet)
+    else
+        bullet:live()
+    end
     bullet:setPosition(x, y)
     bullet:moveTo(self.center, -1000)
     bullet:setRotation(player:getRotation())
-    local bullet2 = Bullet.new(self.center, self.size.width)
+
+    local bullet2 = self.layer:getChildByName(Bullet.tag)
+    if bullet2 == nil then
+        bullet2 = Bullet.new(self.center, self.size.width)
+        self.layer:addChild(bullet2)
+    else
+        bullet2:live()
+    end
     bullet2:setPosition(x, y)
     bullet2:moveTo(self.center, -1000)
     bullet2:setRotation(player:getRotation())
 
+    -- move bullets to turrent positions
     local angle = math.rad(self.layer:getRotation())
     local cos = math.cos(angle)
     local sin = math.sin(angle)
     bullet2:setPosition(x - 20*cos, y - 20*sin)
     bullet:setPosition(x + 20*cos, y + 20*sin)
-    self.layer:addChild(bullet)
-    self.layer:addChild(bullet2)
 end
 
 return PlayScene

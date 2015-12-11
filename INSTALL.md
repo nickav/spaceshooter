@@ -1,0 +1,1 @@
+See [http://www.cocos2d-x.org/wiki/Binding_Custom_Class_To_Lua_Runtime](http://www.cocos2d-x.org/wiki/Binding_Custom_Class_To_Lua_Runtime)

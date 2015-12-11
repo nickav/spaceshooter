@@ -1,3 +1,7 @@
 runtime/
 .settings
 .idea
+*.swp
+frameworks/
+!frameworks/cocos2d-x/cocos/my/
+!frameworks/cocos2d-x/tools/tolua/cocos2dx_custom.ini

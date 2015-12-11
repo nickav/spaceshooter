@@ -31,11 +31,17 @@ function PlayScene:createLayer()
     math.randomseed(os.clock())
     
     -- create draw node
-    local draw = cc.DrawNode:create()
+    local debug = cc.DrawNode:create()
+    debug:setLocalZOrder(100)
+    layer:addChild(debug)
+    
+    local c = CustomClass:create()
+    local msg = c:helloMsg()
+    print(msg)
+    
+    -- planet radius
     local radius = 127
     self.radius = radius
-    draw:drawSolidCircle(self.center, radius, 0, 16, 1, 1, cc.c4f(1.0,0,0,1.0))
-    layer:addChild(draw)
 
     -- move camera
     layer:setPosition(0, -self.center.y - radius/2)
@@ -68,10 +74,20 @@ function PlayScene:createLayer()
         local enemyTimer = Timer.create(2)
         self:createEnemy()
 
+        -- game speed, 1 = normal speed
+        local speed = 0.5
+        Timer.speed = speed
+        
+        local function drawCollisionRect(b)
+            local rect = b:getCollisionRect()
+            debug:drawRect(cc.p(rect.x, rect.y), cc.p(rect.x + rect.width, rect.y + rect.height), cc.c4f(0,1,1,1))
+        end
+                
         local time = 0
         local function update(dt)
-            draw:clear()
             time = time + dt
+            
+            debug:clear()
             
             -- rotate the world
             if GameInput.pressingRight() then
@@ -96,6 +112,7 @@ function PlayScene:createLayer()
                     leftSpeed = maxSpeed
                 end
                 rightSpeed = minSpeed
+                speed = 0.5
             else
                 rightSpeed = minSpeed
                 leftSpeed = minSpeed
@@ -107,23 +124,22 @@ function PlayScene:createLayer()
                 shootCooldown:reset()
             end
 
-
             -- update all children
             local children = layer:getChildren()
             for i=1, #children do
                 if children[i].alive then
-                    children[i]:update(dt)
+                    children[i]:update(dt * speed)
                 
                     -- check if an enemy collides with a bullet
                     if children[i].__cname == "Enemy" then
                         local enemy = children[i]
                         local rect = enemy:getBoundingBox()
-                        draw:drawRect(cc.p(rect.x, rect.y), cc.p(rect.x + rect.width, rect.y + rect.height), cc.c4f(1,1,0,1))
+                        debug:drawRect(cc.p(rect.x, rect.y), cc.p(rect.x + rect.width, rect.y + rect.height), cc.c4f(1,1,0,1))
+                        drawCollisionRect(enemy)
                         for i=1,#self.bullets do
                             local bullet = self.bullets[i]
-                            if bullet.alive and cc.rectIntersectsRect(bullet:getBoundingBox(), rect) then
-                                bullet:kill()
-                                enemy:kill()
+                            if bullet.alive and bullet:collidesWith(enemy) then
+                                speed = 0
                                 break
                             end
                         end
@@ -133,8 +149,8 @@ function PlayScene:createLayer()
             
             -- debug draw
             for i=1, #self.bullets do
-                local rect = self.bullets[i]:getBoundingBox()
-                draw:drawRect(cc.p(rect.x, rect.y), cc.p(rect.x + rect.width, rect.y + rect.height), cc.c4f(0,1,1,1))
+                local b = self.bullets[i]
+                drawCollisionRect(b)
             end
             
             -- create enemies

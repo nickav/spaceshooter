@@ -22,7 +22,7 @@ function Entity.extend(cls)
     cls.speed = cc.p(0,0)
     cls.alive = true
     cls.size = cls:getTextureRect()
-    cls.prevBoundingBox = nil
+    cls.lastRect = nil
 
     -- copy methods to class
     for k,v in pairs(Entity) do cls[k] = v end
@@ -32,7 +32,7 @@ end
 function Entity:update(dt)
     if not self.alive then return end
     
-    self.prevBoundingBox = self:getBoundingBox()
+    self.lastRect = self:getRect()
 
     -- move based on speed
     local x = self:getPositionX() + self.speed.x*dt
@@ -42,7 +42,7 @@ end
 
 function Entity:live()
     self.alive = true
-    self.prevBoundingBox = nil
+    self.lastRect = nil
     self:setVisible(true)
     self:setName(Entity.default)
 end
@@ -60,39 +60,147 @@ local function lazyCollidesWith(self, other)
     local rect1 = self:getBoundingBox()
     local rect2 = other:getBoundingBox()
     
-    if self.prevBoundingBox then rect1 = cc.rectUnion(rect1, self.prevBoundingBox) end
-    if other.prevBoundingBox then rect2 = cc.rectUnion(rect2, other.prevBoundingBox) end
+    if self.lastRect then rect1 = cc.rectUnion(rect1, self.lastRect) end
+    if other.lastRect then rect2 = cc.rectUnion(rect2, other.lastRect) end
     
     return cc.rectIntersectsRect(rect1, rect2)
 end
 
--- rotate a single point:
--- x1 = cos(deg) * x - sin(deg) * y
--- y2 = sin(deg) * x + cos(deg) * y
-
 -- rectangle intersection method that takes into account the game object's rotation
+-- Rotated Rectangles Collision Detection, Oren Becker, 2001
 local function rotatedCollidesWith(self, other)
+    local r1 = self:getCollisionRect()
+    local a1 = math.rad(self:getRotation())
+    local r2 = other:getCollisionRect()
+    local a2 = math.rad(other:getRotation())
+    
+    local ang = a1 - a2
+    local cosa = math.cos(ang)
+    local sina = math.sin(ang)
+    
+    -- move rr2 to make rr1 cannonic
+    local C = cc.p(r2.x - r1.x, r2.y - r2.y)
+    
+    -- rotate rr2 clockwise by rr2->ang to make rr2 axis-aligned
+    do
+        local t = C.x
+        local ca = math.cos(a2)
+        local sa = math.cos(a2)
+        C.x = t*ca + C.y*sa
+        C.y = -t*sa + C.y*ca
+    end
+    
+    -- calculate verticies of moved and axis-aligned rr2
+    local BL = cc.p(C.x - r2.width, C.y - r2.height)
+    local TR = cc.p(C.x + r2.width, C.y + r2.height)
+    
+    -- calculate verticies of rotated rr1
+    local A = cc.p(-r1.height*sina + r1.width*cosa, r1.height*cosa + r1.width*sina)
+    local B = cc.p(A.x - r1.width*cosa, A.y - r1.width*sina)
+    
+    local t = sina*cosa
+    
+    -- verify that A is vertical min/max, B is horizontal min/max
+    if t < 0 then
+        t = A.x
+        A.x = B.x
+        B.x = t
+        t = A.y
+        A.y = B.y
+        B.y = t
+    end
+    
+    -- verify that B is horizontal minimum (leftest-vertext)
+    if sina < 0 then
+        B.x = -B.x
+        B.y = -B.y
+   end
+   
+   -- if rr2(ma) isn't in the horizontal range of
+   -- colliding with rr1(r), collision is impossible
+   if B.x > TR.x or B.x > -BL.x then return false end
+   
+   local ext1 = 0
+   local ext2 = 0
+   
+   -- if rr1(r) is axis-aligned, vertical min/max are easy to get
+   if (t == 0) then
+       ext1 = A.y
+       ext2 = -ext1
+   else
+       local x = BL.x - A.x
+       local a = TR.x - A.x
+       ext1 = A.y
+        -- if the first vertical min/max isn't in (BL.x, TR.x), then
+        -- find the verical min/max on BL.x or on TR.x
+        if a*x > 0 then
+            local dx = A.x
+            if (x < 0) then 
+                dx = dx - B.x
+                ext1 = ext1 - B.y
+                x = a
+            else
+                dx = dx + B.x
+                ext1 = ext1 + B.y
+            end
+            ext1 = ext1 * x
+            ext1 = ext1 / dx
+            ext1 = ext1 + A.y
+        end
+        
+        x = BL.x + A.x
+        a = TR.x + A.x
+        ext2 = -A.y
+        -- if the second vertical min/max isn't in (BL.x, TR.x), then
+        -- find the local vertical min/max on BL.x or on TR.x
+        if a*x > 0 then
+            local dx = -A.x
+            if x < 0 then
+                dx = dx - B.x
+                ext2 = ext2 - B.y
+                x = a
+            else
+                dx = dx + B.x
+                ext2 = ext2 + B.y
+            end
+            ext2 = ext2 * x
+            ext2 = ext2 / dx
+            ext2 = ext2 - A.y
+        end
+   end
+   
+   -- check whether rr2(ma) is in the vertical range of colliding with rr1(r)
+   -- for the horizontal range of rr2
+   return not((ext1 < BL.y and ext2 < BL.y) or (ext1 > TR.y and ext2 > TR.y))
 end
 
+-- TODO: merge current collision rect with previous to prevent tunneling
 function Entity:getCollisionRect()
-    local rect = {x = 0, y = 0, width = 0, height = 0}
-    rect.x = self:getPositionX() - 0.5 * self.size.width
-    rect.y = self:getPositionY() - 0.5 * self.size.height
-    rect.width = self.size.width
-    rect.height = self.size.height
+    local rect = self:getRect()
+    -- sort of works, but doesn't merge rectangles according to rotation
+    --if self.lastRect then rect = cc.rectUnion(rect, self.lastRect) end
     return rect
 end
 
-function Entity:collidesWith(other)
-    return cc.rectIntersectsRect(self:getCollisionRect(), other:getCollisionRect())
+-- returns an unrotated rectangle
+function Entity:getRect()
+    local rect = {
+        x = self:getPositionX() - 0.5 * self.size.width,
+        y = self:getPositionY() - 0.5 * self.size.height,
+        width = self.size.width,
+        height = self.size.height
+    }
+    return rect
 end
 
--- parent must extend Node
---[[
-function Entity.getFirstAvailable(parent)
-    return parent:getChildByName(Entity.dead)
+-- collision detection that takes into account a Node's position and rotation
+function Entity:collidesWith(other)
+    -- if two objects are nearby, then check more precisely whether or not they collide
+    if self.alive and other.alive and lazyCollidesWith(self, other) then
+        return rotatedCollidesWith(self, other)
+    end
+    return false
 end
---]]
 
 function Entity:moveTo(position, speed)
     local dx = position.x - self:getPositionX()

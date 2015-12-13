@@ -35,6 +35,7 @@ function PlayScene:createLayer()
     debug:setLocalZOrder(100)
     layer:addChild(debug)
     
+    -- calling c++ code!
     local c = CustomClass:create()
     local msg = c:helloMsg()
     print(msg)
@@ -75,7 +76,7 @@ function PlayScene:createLayer()
         self:createEnemy()
 
         -- game speed, 1 = normal speed
-        local speed = 0.5
+        local speed = 0.25
         Timer.speed = speed
         
         local function drawCollisionRect(b)
@@ -112,7 +113,6 @@ function PlayScene:createLayer()
                     leftSpeed = maxSpeed
                 end
                 rightSpeed = minSpeed
-                speed = 0.5
             else
                 rightSpeed = minSpeed
                 leftSpeed = minSpeed
@@ -139,8 +139,8 @@ function PlayScene:createLayer()
                         for i=1,#self.bullets do
                             local bullet = self.bullets[i]
                             if bullet.alive and bullet:collidesWith(enemy) then
-                                speed = 0
-                                break
+                                bullet:kill()
+                                enemy:kill()
                             end
                         end
                     end

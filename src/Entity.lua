@@ -82,13 +82,10 @@ local function rotatedCollidesWith(self, other)
     local C = cc.p(r2.x - r1.x, r2.y - r2.y)
     
     -- rotate rr2 clockwise by rr2->ang to make rr2 axis-aligned
-    do
-        local t = C.x
-        local ca = math.cos(a2)
-        local sa = math.cos(a2)
-        C.x = t*ca + C.y*sa
-        C.y = -t*sa + C.y*ca
-    end
+    local ca = math.cos(a2)
+    local sa = math.cos(a2)
+    C.x = C.x*ca + C.y*sa
+    C.y = -C.x*sa + C.y*ca
     
     -- calculate verticies of moved and axis-aligned rr2
     local BL = cc.p(C.x - r2.width, C.y - r2.height)

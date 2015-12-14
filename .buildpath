@@ -3,5 +3,4 @@
 	<buildpathentry kind="src" path=""/>
 	<buildpathentry kind="con" path="org.ccdt.ldt.ExecutionEnvironmentContainer/cocos2dx/3.3"/>
 	<buildpathentry kind="con" path="org.ccdt.ldt.ExecutionEnvironmentContainer/lua/5.1"/>
-	<buildpathentry external="true" kind="lib" path="/Users/Nick/cocos2d/projects/SpaceShooter/frameworks/cocos2d-x/cocos/scripting/lua-bindings/auto/api/CustomClass.zip"/>
 </buildpath>

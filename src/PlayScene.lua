@@ -17,14 +17,16 @@ end
 function PlayScene:ctor()
     self.size = cc.Director:getInstance():getVisibleSize()
     self.origin = cc.Director:getInstance():getVisibleOrigin()
-    self.center = cc.p(self.size.width/2, self.size.height/2)
+    self.center = cc.p(0.5 * self.size.width, 0.5 * self.size.height)
     self.schedulerID = nil
-    self.enemySpawnDist = math.sqrt(self.size.width * self.size.width / 2 + self.size.height * self.size.height)
+    local width = 0.5 * self.size.width + 100
+    self.enemySpawnDist = math.sqrt(width * width + self.size.height * self.size.height)
     self.bullets = {}
 end
 
 function PlayScene:createLayer()
     local layer = cc.Layer:create()
+    --local layer = MotionBlurLayer:create(10)
     GameInput.create(layer)
     self.layer = layer
     
@@ -34,11 +36,6 @@ function PlayScene:createLayer()
     local debug = cc.DrawNode:create()
     debug:setLocalZOrder(100)
     layer:addChild(debug)
-    
-    -- calling c++ code!
-    local c = CustomClass:create()
-    local msg = c:helloMsg()
-    print(msg)
     
     -- planet radius
     local radius = 127
@@ -69,21 +66,16 @@ function PlayScene:createLayer()
         local leftSpeed = 0
         local accel = 4
         local minSpeed = 5
-        local maxSpeed = 150
+        local maxSpeed = 120
         local shootCooldown = Timer.create(0.3)
         
         local enemyTimer = Timer.create(2)
         self:createEnemy()
 
         -- game speed, 1 = normal speed
-        local speed = 0.25
+        local speed = 1
         Timer.speed = speed
-        
-        local function drawCollisionRect(b)
-            local rect = b:getCollisionRect()
-            debug:drawRect(cc.p(rect.x, rect.y), cc.p(rect.x + rect.width, rect.y + rect.height), cc.c4f(0,1,1,1))
-        end
-                
+
         local time = 0
         local function update(dt)
             time = time + dt
@@ -118,7 +110,7 @@ function PlayScene:createLayer()
                 leftSpeed = minSpeed
             end
             
-            -- shoot bulletsq
+            -- shoot bullets
             if shootCooldown.finished then
                 self:shoot(player)
                 shootCooldown:reset()
@@ -133,30 +125,22 @@ function PlayScene:createLayer()
                     -- check if an enemy collides with a bullet
                     if children[i].__cname == "Enemy" then
                         local enemy = children[i]
-                        local rect = enemy:getBoundingBox()
-                        debug:drawRect(cc.p(rect.x, rect.y), cc.p(rect.x + rect.width, rect.y + rect.height), cc.c4f(1,1,0,1))
-                        drawCollisionRect(enemy)
                         for i=1,#self.bullets do
                             local bullet = self.bullets[i]
                             if bullet.alive and bullet:collidesWith(enemy) then
                                 bullet:kill()
                                 enemy:kill()
+                                break
                             end
                         end
                     end
                 end
             end
             
-            -- debug draw
-            for i=1, #self.bullets do
-                local b = self.bullets[i]
-                drawCollisionRect(b)
-            end
-            
             -- create enemies
             if enemyTimer.finished then
                 self:createEnemy()
-                enemyTimer:reset(math.random(2, 4))
+                enemyTimer:reset(math.random(1, 4))
             end
         end
         self.schedulerID = cc.Director:getInstance():getScheduler():scheduleScriptFunc(update, 0, false)
@@ -193,7 +177,7 @@ function PlayScene:createEnemy()
 end
 
 function PlayScene:createBullet()
-    -- try to find an unused bullet, or create a new one if none exists
+    -- try to find an unused bullet or create one if none exists
     local bullet = self.layer:getChildByName(Bullet.tag)
     if bullet == nil then
         bullet = Bullet.new(self.center, self.size.width)

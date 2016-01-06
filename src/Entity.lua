@@ -10,12 +10,14 @@ function Entity.create(sprite)
 end
 --]]
 
+-- Entity: the base game object class. Supports object pooling. Objects ready to be
+-- reused can be accessed with: parent:getChildByName("className")
+-- 
 -- psuedo-multiple inheritence thing
 -- pretty much just did this so auto completions for cc.Sprite still works
 local Entity = {}
 
-Entity.default = "0"
-Entity.tag = "1"
+Entity.default = "Alive"
 
 -- Precondition: cls extends cc.Sprite
 function Entity.extend(cls)
@@ -50,7 +52,7 @@ end
 function Entity:kill()
     self.alive = false
     self:setVisible(false)
-    self:setName(Entity.tag)
+    self:setName(self.__cname)
 end
 
 -- cocos2dx function getBoundingBox returns an "Axis-Aligned Bounding Box" (AABB)

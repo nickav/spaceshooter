@@ -26,7 +26,6 @@ end
 
 function PlayScene:createLayer()
     local layer = cc.Layer:create()
-    --local layer = MotionBlurLayer:create(10)
     GameInput.create(layer)
     self.layer = layer
     
@@ -164,7 +163,7 @@ function PlayScene:createEnemy()
     local y = math.sin(angle) * distance + self.center.y
     
     -- try to reuse an old enemy or create one if none exists
-    local enemy = self.layer:getChildByName(Enemy.tag)
+    local enemy = self.layer:getChildByName("Enemy")
     if enemy == nil then
         enemy = Enemy.new(self.center, self.radius)
         self.layer:addChild(enemy)
@@ -178,7 +177,7 @@ end
 
 function PlayScene:createBullet()
     -- try to find an unused bullet or create one if none exists
-    local bullet = self.layer:getChildByName(Bullet.tag)
+    local bullet = self.layer:getChildByName("Bullet")
     if bullet == nil then
         bullet = Bullet.new(self.center, self.size.width)
         self.layer:addChild(bullet)
@@ -204,12 +203,14 @@ function PlayScene:shoot(player)
     local cos = math.cos(angle)
     local sin = math.sin(angle)
     bullet:setPosition(x + 20*cos, y + 20*sin)
+    bullet:update(20/1000)
 
     local bullet2 = self:createBullet()
     bullet2:setPosition(x, y)
     bullet2:moveTo(self.center, -1000)
     bullet2:setRotation(player:getRotation())
     bullet2:setPosition(x - 20*cos, y - 20*sin)
+    bullet2:update(20/1000)
 end
 
 return PlayScene

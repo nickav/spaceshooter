@@ -31,8 +31,7 @@ function GameInput.create(layer)
         local function onTouchCancelled(touch, event)
             _touch = nil
         end
-    
-        -- TODO: touch all at once
+
         local listener = cc.EventListenerTouchOneByOne:create()
         listener:registerScriptHandler(onTouchBegan, cc.Handler.EVENT_TOUCH_BEGAN)
         listener:registerScriptHandler(onTouchMoved, cc.Handler.EVENT_TOUCH_MOVED)

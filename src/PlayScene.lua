@@ -9,9 +9,7 @@ local PlayScene = class("PlayScene", function()
 end)
 
 function PlayScene.create()
-    local scene = PlayScene.new()
-    scene:addChild(scene:createLayer())
-    return scene
+    return PlayScene.new()
 end
 
 function PlayScene:ctor()
@@ -22,9 +20,13 @@ function PlayScene:ctor()
     local width = 0.5 * self.size.width + 100
     self.enemySpawnDist = math.sqrt(width * width + self.size.height * self.size.height)
     self.bullets = {}
+    
+    self.bg = self:createLayerBackground()
+    self:addChild(self.bg, -10)
+    self:addChild(self:createLayerMain())
 end
 
-function PlayScene:createLayer()
+function PlayScene:createLayerMain()
     local layer = cc.Layer:create()
     GameInput.create(layer)
     self.layer = layer
@@ -45,18 +47,24 @@ function PlayScene:createLayer()
     
     --[[
     local moveCenter = cc.MoveTo:create(1, cc.p(0,0))
-    local zoomOut = cc.ScaleTo:create(0.5,0.5)
+    local zoomOut = cc.ScaleTo:create(1, 0.5)
     local moveCenterAndZoomOut = cc.Spawn:create(moveCenter, zoomOut)
     layer:runAction(cc.EaseInOut:create(moveCenterAndZoomOut, 6))
-    local moveBottom = cc.MoveTo:create(1, cc.p(0,-self.size.height/2))
-    local zoomIn = cc.ScaleTo:create(1,1)
+    local moveBottom = cc.MoveTo:create(1, cc.p(0, -self.center.y - radius/2))
+    local zoomIn = cc.ScaleTo:create(1, 1)
     local moveBottomAndZoomIn = cc.Spawn:create(moveBottom, zoomIn)
     layer:setScale(0.5)
+    layer:setPosition(0,0)
     layer:runAction(cc.EaseInOut:create(moveBottomAndZoomIn, 6))
     --]]
 
     -- update every frame
     do
+        -- create planet
+        local planet = cc.Sprite:create("planet.png")
+        planet:setPosition(self.center)
+        layer:addChild(planet)
+        
         -- create player
         local player = Player.new(layer, self.center, radius)
         layer:addChild(player)
@@ -81,11 +89,14 @@ function PlayScene:createLayer()
             
             debug:clear()
             
+            local bgSpeed = 0.5
+            
             -- rotate the world
             if GameInput.pressingRight() then
                 local rot = layer:getRotation() - rightSpeed*dt
                 if rot >= 360 then rot = rot - 360 end
                 layer:setRotation(rot)
+                self.bg:setRotation(self.bg:getRotation() - rightSpeed*dt*bgSpeed)
                 
                 if rightSpeed < maxSpeed then
                     rightSpeed = rightSpeed + accel
@@ -97,6 +108,7 @@ function PlayScene:createLayer()
                 local rot = layer:getRotation() + leftSpeed*dt
                 if rot < 0 then rot = rot + 360 end
                 layer:setRotation(rot)
+                self.bg:setRotation(self.bg:getRotation() + leftSpeed*dt*bgSpeed)
                 
                 if leftSpeed < maxSpeed then
                     leftSpeed = leftSpeed + accel
@@ -155,6 +167,48 @@ function PlayScene:createLayer()
     return layer
 end
 
+function PlayScene:createLayerBackground()
+    local layer = cc.Layer:create()
+    
+    local emitter = cc.ParticleSystemQuad:createWithTotalParticles(500)
+    layer:addChild(emitter, 10)
+    emitter:setTexture(cc.Director:getInstance():getTextureCache():addImage("circle.png"))
+
+    -- duration
+    emitter:setDuration(cc.PARTICLE_DURATION_INFINITY)
+
+    -- emitter position
+    emitter:setPosition(cc.p(self.center.x, 0))
+    emitter:setPosVar(cc.p(self.enemySpawnDist, self.enemySpawnDist))
+
+    -- life of particles
+    emitter:setLife(999999999)
+    emitter:setLifeVar(0)
+
+    -- spin of particles
+    emitter:setStartSpin(0)
+    emitter:setStartSpinVar(0)
+    emitter:setEndSpin(0)
+    emitter:setEndSpinVar(0)
+
+    -- color of particles
+    emitter:setStartColor(cc.c4f(1, 1, 1, 0.5))
+    emitter:setStartColorVar(cc.c4f(0, 0, 0, 0.4))
+
+    -- size, in pixels
+    emitter:setStartSize(3)
+    emitter:setStartSizeVar(1)
+    emitter:setEndSize(cc.PARTICLE_START_SIZE_EQUAL_TO_END_SIZE)
+
+    -- emits per second
+    emitter:setEmissionRate(-1)
+
+    -- additive
+    emitter:setBlendAdditive(false)
+
+    return layer
+end
+
 function PlayScene:createEnemy()
     local angle = math.random()*2*math.pi
     local distance = self.enemySpawnDist
@@ -170,9 +224,10 @@ function PlayScene:createEnemy()
     else
         enemy:live()
     end
+    
     enemy:setPosition(x, y)
     enemy:setRotation(math.deg(-angle))
-    enemy:moveTo(self.center, 50)
+    enemy:moveTo(self.center, 80)
 end
 
 function PlayScene:createBullet()

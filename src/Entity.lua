@@ -10,11 +10,14 @@ function Entity.create(sprite)
 end
 --]]
 
--- Entity: the base game object class. Supports object pooling. Objects ready to be
--- reused can be accessed with: parent:getChildByName("className")
--- 
--- psuedo-multiple inheritence thing
--- pretty much just did this so auto completions for cc.Sprite still works
+--[[
+    Entity: the base game object class.
+    Supports object pooling. Objects ready to be reused
+    can be accessed with: parent:getChildByName("className")
+
+    Psuedo-multiple inheritence thing...
+    Just did this so auto completions for cc.Sprite still work.
+--]]
 local Entity = {}
 
 Entity.default = "Alive"
@@ -208,5 +211,6 @@ function Entity:moveTo(position, speed)
     self.speed.x = speed * dx / distance
     self.speed.y = speed * dy / distance
 end
+
 
 return Entity

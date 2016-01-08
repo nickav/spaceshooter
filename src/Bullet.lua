@@ -1,4 +1,5 @@
 local Entity = require("Entity")
+
 local Bullet = class("Bullet", function()
     return Entity.extend(cc.Sprite:create("bullet.png"))
 end)
@@ -18,5 +19,6 @@ function Bullet:update(dt)
         self:kill()
     end
 end
+
 
 return Bullet

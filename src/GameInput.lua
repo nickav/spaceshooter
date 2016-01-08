@@ -5,13 +5,16 @@ local GameInput = {}
 
 local target = cc.Application:getInstance():getTargetPlatform()
 local _touch = nil
-local _visibleSize = nil
+local _size = nil
 local _key_right = false
 local _key_left = false
+local _key_up = false
+local _special_touch_area = false
 
 -- attach input to layer
 function GameInput.create(layer)
-    _visibleSize = cc.Director:getInstance():getVisibleSize()
+    _size = cc.Director:getInstance():getVisibleSize()
+    _special_touch_area = cc.rect(_size.width * 0.5 - 127, -127, 255, 255)
     -- touch handlers
     -- {
         local function onTouchBegan(touch, event)
@@ -39,6 +42,34 @@ function GameInput.create(layer)
         listener:registerScriptHandler(onTouchCancelled, cc.Handler.EVENT_TOUCH_CANCELLED)
         layer:getEventDispatcher():addEventListenerWithSceneGraphPriority(listener, layer)
     -- }
+    
+    -- treat mouse as touch input
+    -- {
+        local mouseDown = false
+        local function onMouseDown(event)
+            mouseDown = true
+            local touch = cc.p(event:getCursorX(), event:getCursorY())
+            onTouchBegan(touch, event)
+        end
+    
+        local function onMouseMoved(event)
+            if not mouseDown then return end
+            local touch = cc.p(event:getCursorX(), event:getCursorY())
+            onTouchMoved(touch,event)
+        end
+    
+        local function onMouseUp(event)
+            mouseDown = false
+            local touch = cc.p(event:getCursorX(), event:getCursorY())
+            onTouchEnded(touch,event)
+        end
+        
+        local mouseListener = cc.EventListenerMouse:create()
+        mouseListener:registerScriptHandler(onMouseDown, cc.Handler.EVENT_MOUSE_DOWN)
+        mouseListener:registerScriptHandler(onMouseMoved, cc.Handler.EVENT_MOUSE_MOVE)
+        mouseListener:registerScriptHandler(onMouseUp, cc.Handler.EVENT_MOUSE_UP)
+        layer:getEventDispatcher():addEventListenerWithSceneGraphPriority(mouseListener, layer)
+    -- }
 
     -- keyboard handlers
     -- {
@@ -52,6 +83,7 @@ function GameInput.create(layer)
                     _key_left = true
                 end
                 if (keyCode == 146 or keyCode == 28) then
+                    _key_up = true
                 end
                 if (keyCode == 142 or keyCode == 29) then
                 end
@@ -63,6 +95,7 @@ function GameInput.create(layer)
                     _key_left = true
                 end
                 if (keyCode == cc.KeyCode.KEY_W or keyCode == cc.KeyCode.KEY_UP_ARROW) then
+                    _key_up = true
                 end
                 if (keyCode == cc.KeyCode.KEY_S or keyCode == cc.KeyCode.KEY_DOWN_ARROW) then
                 end
@@ -77,6 +110,7 @@ function GameInput.create(layer)
                     _key_left = false
                 end
                 if (keyCode == 146 or keyCode == 28) then
+                    _key_up = false
                 end
                 if (keyCode == 142 or keyCode == 29) then
                 end
@@ -88,6 +122,7 @@ function GameInput.create(layer)
                     _key_left = false
                 end
                 if (keyCode == cc.KeyCode.KEY_W or keyCode == cc.KeyCode.KEY_UP_ARROW) then
+                    _key_up = false
                 end
                 if (keyCode == cc.KeyCode.KEY_S or keyCode == cc.KeyCode.KEY_DOWN_ARROW) then
                 end
@@ -101,11 +136,21 @@ function GameInput.create(layer)
 end
 
 function GameInput.pressingLeft()
-    return ((not _touch == nil and _touch.x < _visibleSize.width / 2) or _key_left)
+    return (_touch ~= nil and _touch.x < _size.width / 2) or _key_left
 end
 
 function GameInput.pressingRight()
-    return ((not _touch == nil and _touch.x >= _visibleSize.width / 2) or _key_right)
+    return (_touch ~= nil and _touch.x >= _size.width / 2) or _key_right
 end
+
+function GameInput.pressingSpecial()
+    local special = false
+    if _touch ~= nil then
+        local touchRect = cc.rect(_touch.x, _touch.y, 40, 40)
+        special = cc.rectIntersectsRect(touchRect, _special_touch_area)
+    end
+    return special or _key_up
+end
+
 
 return GameInput

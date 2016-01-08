@@ -21,8 +21,8 @@ function PlayScene:ctor()
     self.enemySpawnDist = math.sqrt(width * width + self.size.height * self.size.height)
     self.bullets = {}
     
-    self.bg = self:createLayerBackground()
-    self:addChild(self.bg, -10)
+    --self.bg = self:createLayerBackground()
+    --self:addChild(self.bg, -10)
     self:addChild(self:createLayerMain())
 end
 
@@ -50,12 +50,15 @@ function PlayScene:createLayerMain()
     local zoomOut = cc.ScaleTo:create(1, 0.5)
     local moveCenterAndZoomOut = cc.Spawn:create(moveCenter, zoomOut)
     layer:runAction(cc.EaseInOut:create(moveCenterAndZoomOut, 6))
+    layer:setScale(1)
+    layer:setPosition(0, -self.center.y - radius/2)
+    
     local moveBottom = cc.MoveTo:create(1, cc.p(0, -self.center.y - radius/2))
     local zoomIn = cc.ScaleTo:create(1, 1)
     local moveBottomAndZoomIn = cc.Spawn:create(moveBottom, zoomIn)
+    layer:runAction(cc.EaseInOut:create(moveBottomAndZoomIn, 6))
     layer:setScale(0.5)
     layer:setPosition(0,0)
-    layer:runAction(cc.EaseInOut:create(moveBottomAndZoomIn, 6))
     --]]
 
     -- update every frame
@@ -69,8 +72,7 @@ function PlayScene:createLayerMain()
         local player = Player.new(layer, self.center, radius)
         layer:addChild(player)
     
-        local rightSpeed = 0
-        local leftSpeed = 0
+        local godSpeed = 0
         local accel = 4
         local minSpeed = 5
         local maxSpeed = 120
@@ -78,6 +80,9 @@ function PlayScene:createLayerMain()
         
         local enemyTimer = Timer.create(2)
         self:createEnemy()
+        
+        local didSpecial = false
+        local specialTimer = Timer.create(4)
 
         -- game speed, 1 = normal speed
         local speed = 1
@@ -89,38 +94,59 @@ function PlayScene:createLayerMain()
             
             debug:clear()
             
-            local bgSpeed = 0.5
+            local bgSpeed = 1
             
-            -- rotate the world
+            -- handle input
             if GameInput.pressingRight() then
-                local rot = layer:getRotation() - rightSpeed*dt
-                if rot >= 360 then rot = rot - 360 end
-                layer:setRotation(rot)
-                self.bg:setRotation(self.bg:getRotation() - rightSpeed*dt*bgSpeed)
+                if godSpeed >= 0 then godSpeed = -minSpeed end
                 
-                if rightSpeed < maxSpeed then
-                    rightSpeed = rightSpeed + accel
+                if godSpeed > -maxSpeed then
+                    godSpeed = godSpeed - accel
                 else
-                    rightSpeed = maxSpeed
+                    godSpeed = -maxSpeed
                 end
-                leftSpeed = minSpeed
             elseif GameInput.pressingLeft() then
-                local rot = layer:getRotation() + leftSpeed*dt
-                if rot < 0 then rot = rot + 360 end
-                layer:setRotation(rot)
-                self.bg:setRotation(self.bg:getRotation() + leftSpeed*dt*bgSpeed)
+                if godSpeed <= 0 then godSpeed = minSpeed end
                 
-                if leftSpeed < maxSpeed then
-                    leftSpeed = leftSpeed + accel
+                if godSpeed < maxSpeed then
+                    godSpeed = godSpeed + accel
                 else
-                    leftSpeed = maxSpeed
+                    godSpeed = maxSpeed
                 end
-                rightSpeed = minSpeed
             else
-                rightSpeed = minSpeed
-                leftSpeed = minSpeed
+                godSpeed = 0
             end
             
+            -- rotate the world
+            local rot = layer:getRotation() + godSpeed*dt
+            if rot >= 360 then rot = rot - 360 end
+            if rot < 0 then rot = rot + 360 end
+            layer:setRotation(rot)
+            
+            -- special power up
+            if GameInput.pressingSpecial() then
+                if not didSpecial then
+                    didSpecial = true
+                    local moveCenter = cc.MoveTo:create(1, cc.p(0,0))
+                    local zoomOut = cc.ScaleTo:create(1, 0.5)
+                    local moveCenterAndZoomOut = cc.Spawn:create(moveCenter, zoomOut)
+                    layer:runAction(cc.EaseInOut:create(moveCenterAndZoomOut, 6))
+                    specialTimer:reset()
+                    shootCooldown:reset(0.05)
+                end
+            end
+            
+            if didSpecial then
+                if specialTimer.finished then
+                    local moveBottom = cc.MoveTo:create(1, cc.p(0, -self.center.y - radius/2))
+                    local zoomIn = cc.ScaleTo:create(1, 1)
+                    local moveBottomAndZoomIn = cc.Spawn:create(moveBottom, zoomIn)
+                    layer:runAction(cc.EaseInOut:create(moveBottomAndZoomIn, 6))
+                    shootCooldown:reset(0.3)
+                    didSpecial = false
+                end
+            end
+           
             -- shoot bullets
             if shootCooldown.finished then
                 self:shoot(player)
@@ -151,7 +177,8 @@ function PlayScene:createLayerMain()
             -- create enemies
             if enemyTimer.finished then
                 self:createEnemy()
-                enemyTimer:reset(math.random(1, 4))
+                --enemyTimer:reset(math.random(1, 4))
+                enemyTimer:reset(0.3)
             end
         end
         self.schedulerID = cc.Director:getInstance():getScheduler():scheduleScriptFunc(update, 0, false)
@@ -209,8 +236,11 @@ function PlayScene:createLayerBackground()
     return layer
 end
 
+local ang = 90
 function PlayScene:createEnemy()
-    local angle = math.random()*2*math.pi
+    --local angle = math.random()*2*math.pi
+    local angle = ang
+    ang = ang - 2*math.pi/36
     local distance = self.enemySpawnDist
     
     local x = math.cos(angle) * distance + self.center.x
@@ -267,5 +297,6 @@ function PlayScene:shoot(player)
     bullet2:setPosition(x - 20*cos, y - 20*sin)
     bullet2:update(20/1000)
 end
+
 
 return PlayScene

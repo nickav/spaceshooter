@@ -136,17 +136,18 @@ function GameInput.create(layer)
 end
 
 function GameInput.pressingLeft()
-    return (_touch ~= nil and _touch.x < _size.width / 2) or _key_left
+    return ((_touch ~= nil and _touch:getLocationInView().x < _size.width / 2) or _key_left)
 end
 
 function GameInput.pressingRight()
-    return (_touch ~= nil and _touch.x >= _size.width / 2) or _key_right
+    return ((_touch ~= nil and _touch:getLocationInView().x >= _size.width / 2) or _key_right)
 end
 
 function GameInput.pressingSpecial()
     local special = false
     if _touch ~= nil then
-        local touchRect = cc.rect(_touch.x, _touch.y, 40, 40)
+        local loc = _touch:getLocationInView()
+        local touchRect = cc.rect(loc.x, loc.y, 40, 40)
         special = cc.rectIntersectsRect(touchRect, _special_touch_area)
     end
     return special or _key_up

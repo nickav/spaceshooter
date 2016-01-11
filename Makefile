@@ -4,3 +4,7 @@ bindings:
 
 completion:
 	zip frameworks/cocos2d-x/MotionBlurLayer.zip frameworks/cocos2d-x/cocos/scripting/lua-bindings/auto/api/MotionBlurLayer.lua
+
+android:
+	cocos compile -s . -p android
+
